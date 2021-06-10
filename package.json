@@ -7,8 +7,9 @@
     "lint": "eslint . --fix",
     "prepare:sync-labels": "ncc build sync-labels.js -o sync-labels --source-map --license licenses.txt",
     "prepare:write-labels": "ncc build write-labels.js -o write-labels --source-map --license licenses.txt",
+    "prepare:all": "npm run prepare:sync-labels && npm run prepare:write-labels",
     "test": "jest",
-    "all": "npm run lint && npm run prepare && npm run test"
+    "all": "npm run lint && npm run prepare:all && npm run test"
   },
   "repository": {
     "type": "git",
