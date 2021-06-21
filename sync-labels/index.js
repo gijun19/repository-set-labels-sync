@@ -2,72 +2,6 @@ require('./sourcemap-register.js');module.exports =
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 21:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-__nccwpck_require__(437).config()
-
-const Rest = __nccwpck_require__(375)
-const { throttling } = __nccwpck_require__(968)
-const Octokit = Rest.Octokit.plugin(throttling)
-
-const octokit = new Octokit({
-  auth: process.env.AUTH_TOKEN,
-  retry: {
-    doNotRetry: [404, 422],
-  },
-  //   log: console,
-  request: {
-    retries: 1,
-    retryAfter: 5,
-  },
-  throttle: {
-    onRateLimit: (retryAfter, options, octokit) => {
-      octokit.log.warn(
-        `Request quota exhausted for request ${options.method} ${options.url}`
-      )
-
-      if (options.request.retryCount === 0) {
-        // only retries once
-        octokit.log.info(`Retrying after ${retryAfter} seconds!`)
-        return true
-      }
-    },
-    onAbuseLimit: (retryAfter, options, octokit) => {
-      // does not retry, only logs a warning
-      octokit.log.warn(
-        `Abuse detected for request ${options.method} ${options.url}`
-      )
-    },
-  },
-})
-
-async function createRepoLabel(owner, repo, label) {
-  return octokit.issues.createLabel({
-    owner,
-    repo,
-    name: label.name,
-    description: label.description || "",
-    color: label.color || "",
-  })
-}
-
-async function getRepoLabels(owner, repo) {
-  return octokit.paginate(octokit.issues.listLabelsForRepo, {
-    owner,
-    repo,
-    per_page: 100,
-  })
-}
-
-module.exports = {
-  createRepoLabel,
-  getRepoLabels,
-}
-
-
-/***/ }),
-
 /***/ 351:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -5062,131 +4996,6 @@ exports.Deprecation = Deprecation;
 
 /***/ }),
 
-/***/ 437:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-/* @flow */
-/*::
-
-type DotenvParseOptions = {
-  debug?: boolean
-}
-
-// keys and values from src
-type DotenvParseOutput = { [string]: string }
-
-type DotenvConfigOptions = {
-  path?: string, // path to .env file
-  encoding?: string, // encoding of .env file
-  debug?: string // turn on logging for debugging purposes
-}
-
-type DotenvConfigOutput = {
-  parsed?: DotenvParseOutput,
-  error?: Error
-}
-
-*/
-
-const fs = __nccwpck_require__(747)
-const path = __nccwpck_require__(622)
-const os = __nccwpck_require__(87)
-
-function log (message /*: string */) {
-  console.log(`[dotenv][DEBUG] ${message}`)
-}
-
-const NEWLINE = '\n'
-const RE_INI_KEY_VAL = /^\s*([\w.-]+)\s*=\s*(.*)?\s*$/
-const RE_NEWLINES = /\\n/g
-const NEWLINES_MATCH = /\r\n|\n|\r/
-
-// Parses src into an Object
-function parse (src /*: string | Buffer */, options /*: ?DotenvParseOptions */) /*: DotenvParseOutput */ {
-  const debug = Boolean(options && options.debug)
-  const obj = {}
-
-  // convert Buffers before splitting into lines and processing
-  src.toString().split(NEWLINES_MATCH).forEach(function (line, idx) {
-    // matching "KEY' and 'VAL' in 'KEY=VAL'
-    const keyValueArr = line.match(RE_INI_KEY_VAL)
-    // matched?
-    if (keyValueArr != null) {
-      const key = keyValueArr[1]
-      // default undefined or missing values to empty string
-      let val = (keyValueArr[2] || '')
-      const end = val.length - 1
-      const isDoubleQuoted = val[0] === '"' && val[end] === '"'
-      const isSingleQuoted = val[0] === "'" && val[end] === "'"
-
-      // if single or double quoted, remove quotes
-      if (isSingleQuoted || isDoubleQuoted) {
-        val = val.substring(1, end)
-
-        // if double quoted, expand newlines
-        if (isDoubleQuoted) {
-          val = val.replace(RE_NEWLINES, NEWLINE)
-        }
-      } else {
-        // remove surrounding whitespace
-        val = val.trim()
-      }
-
-      obj[key] = val
-    } else if (debug) {
-      log(`did not match key and value when parsing line ${idx + 1}: ${line}`)
-    }
-  })
-
-  return obj
-}
-
-function resolveHome (envPath) {
-  return envPath[0] === '~' ? path.join(os.homedir(), envPath.slice(1)) : envPath
-}
-
-// Populates process.env from .env file
-function config (options /*: ?DotenvConfigOptions */) /*: DotenvConfigOutput */ {
-  let dotenvPath = path.resolve(process.cwd(), '.env')
-  let encoding /*: string */ = 'utf8'
-  let debug = false
-
-  if (options) {
-    if (options.path != null) {
-      dotenvPath = resolveHome(options.path)
-    }
-    if (options.encoding != null) {
-      encoding = options.encoding
-    }
-    if (options.debug != null) {
-      debug = true
-    }
-  }
-
-  try {
-    // specifying an encoding returns a string instead of a buffer
-    const parsed = parse(fs.readFileSync(dotenvPath, { encoding }), { debug })
-
-    Object.keys(parsed).forEach(function (key) {
-      if (!Object.prototype.hasOwnProperty.call(process.env, key)) {
-        process.env[key] = parsed[key]
-      } else if (debug) {
-        log(`"${key}" is already defined in \`process.env\` and will not be overwritten`)
-      }
-    })
-
-    return { parsed }
-  } catch (e) {
-    return { error: e }
-  }
-}
-
-module.exports.config = config
-module.exports.parse = parse
-
-
-/***/ }),
-
 /***/ 467:
 /***/ ((module, exports, __nccwpck_require__) => {
 
@@ -6978,12 +6787,57 @@ function wrappy (fn, cb) {
 
 const core = __nccwpck_require__(186)
 const path = __nccwpck_require__(622)
-const { createRepoLabel } = __nccwpck_require__(21)
 const { sleep } = __nccwpck_require__(328)
+
+const Rest = __nccwpck_require__(375)
+const { throttling } = __nccwpck_require__(968)
+const Octokit = Rest.Octokit.plugin(throttling)
+
+const octokit = new Octokit({
+  auth: process.env.AUTH_TOKEN,
+  retry: {
+    doNotRetry: [404, 422],
+  },
+  //   log: console,
+  request: {
+    retries: 1,
+    retryAfter: 5,
+  },
+  throttle: {
+    onRateLimit: (retryAfter, options, octokit) => {
+      octokit.log.warn(
+        `Request quota exhausted for request ${options.method} ${options.url}`
+      )
+
+      if (options.request.retryCount === 0) {
+        // only retries once
+        octokit.log.info(`Retrying after ${retryAfter} seconds!`)
+        return true
+      }
+    },
+    onAbuseLimit: (retryAfter, options, octokit) => {
+      // does not retry, only logs a warning
+      octokit.log.warn(
+        `Abuse detected for request ${options.method} ${options.url}`
+      )
+    },
+  },
+})
+
+async function createRepoLabel(owner, repo, label) {
+  return octokit.issues.createLabel({
+    owner,
+    repo,
+    name: label.name,
+    description: label.description || "",
+    color: label.color || "",
+  })
+}
 
 async function run() {
   try {
-    const lpath = core.getInput("labels-path") || process.env.LABELS_PATH || ""
+    const lpath =
+      core.getInput("labels-json-path") || process.env.LABELS_PATH || ""
 
     const ljson = require(path.resolve(__dirname, lpath))
 
@@ -6995,12 +6849,12 @@ async function run() {
     const { unique, repositories } = ljson
 
     for await (const { labels, owner, repo } of repositories) {
-      const missing = unique.filter(ulabel => {
-        return !labels.find(label => label === ulabel.name)
+      const missing = unique.filter((ulabel) => {
+        return !labels.find((label) => label === ulabel.name)
       })
 
-      const updates = missing.map((mlabel) =>{
-        const ulabel = unique.find(label => label.name === mlabel)
+      const updates = missing.map((mlabel) => {
+        const ulabel = unique.find((label) => label.name === mlabel)
         createRepoLabel(owner, repo, ulabel)
       })
       await Promise.all(updates)

@@ -1,26 +1,19 @@
 name: "Repository set labels sync"
 description: "Aggregates and syncs labels across a set of repositories."
+
 on:
   workflow_dispatch:
+
 inputs:
-  data-directory:
+  labels-json-path:
     description: "Where to store labels for repositories"
     required: true
     default: "path/to/data"
-  repositories-JSON-path:
+  repositories-json-path:
     description: "Path to JSON file containing list of repository URLs."
     required: true
     default: "path/to/json"
 
-jobs:
-  exec:
-    name: Aggregate and sync labels
-    runs-on: ubuntu-latest
-    steps:
-      - id: run-script
-        name: Node.js script
-        env:
-          AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        runs:
-          using: "node14"
-          main: "dist/index.js"
+runs:
+  using: 'node12'
+  main: 'write-labels/index.js'
