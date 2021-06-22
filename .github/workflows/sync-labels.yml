@@ -7,12 +7,9 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      # - uses: actions/checkout@v2
-      #   with:
-      #     token: ${{ secrets.SYNC_LABELS_PAT }}
-      #     fetch-depth: 0
       - uses: ./
         with:
-          labels-json-path: "data/labels.json"
-          repositories-json-path: "data/repositories.json"
+          data-directory: "_actions/data/"
+          repositories-filename: "repositories.json"
+          labels-filename: "labels.json"
           token: ${{ secrets.SYNC_LABELS_PAT }}

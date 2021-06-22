@@ -5,15 +5,22 @@ on:
   workflow_dispatch:
 
 inputs:
-  labels-json-path:
+  data-directory:
     description: "Where to store labels for repositories"
     required: true
     default: "path/to/data"
-  repositories-json-path:
-    description: "Path to JSON file containing list of repository URLs."
+  repositories-filename:
+    description: "Filename of existing repositories JSON list."
     required: true
     default: "path/to/json"
-
+  labels-filename:
+    description: "Filename to save labels data."
+    required: true
+    default: "path/to/json"
+  token:
+    description: "Token to use to authenticate repositories."
+    required: true
+    default: ""
 runs:
   using: 'node12'
-  main: 'write-labels/index.js'
+  main: 'dist/index.js'
