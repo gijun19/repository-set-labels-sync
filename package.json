@@ -2,12 +2,10 @@
   "name": "javascript-action",
   "version": "1.0.0",
   "description": "JavaScript Action Template",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "lint": "eslint . --fix",
-    "prepare:sync-labels": "ncc build sync-labels.js -o sync-labels --source-map --license licenses.txt",
-    "prepare:write-labels": "ncc build write-labels.js -o write-labels --source-map --license licenses.txt",
-    "prepare:all": "npm run prepare:sync-labels && npm run prepare:write-labels",
+    "prepare": "ncc build index.js -o dist --source-map --license licenses.txt",
     "test": "jest",
     "all": "npm run lint && npm run prepare:all && npm run test"
   },
@@ -28,10 +26,13 @@
   "homepage": "https://github.com/actions/javascript-action#readme",
   "dependencies": {
     "@actions/core": "^1.2.5",
+    "@actions/github": "^5.0.0",
     "@octokit/graphql": "^4.6.2",
     "@octokit/plugin-retry": "^3.0.7",
     "@octokit/plugin-throttling": "^3.4.2",
     "@octokit/rest": "^18.5.6",
+    "actions-toolkit": "^6.0.1",
+    "date-fns": "^2.22.1",
     "dotenv": "^10.0.0",
     "mkdirp": "^1.0.4",
     "sleepover": "^1.1.4"
