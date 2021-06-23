@@ -1,9 +1,6 @@
 name: "Repository set labels sync"
 description: "Aggregates and syncs labels across a set of repositories."
 
-on:
-  workflow_dispatch:
-
 inputs:
   data-directory:
     description: "Where to store labels for repositories"
