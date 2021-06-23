@@ -51,13 +51,20 @@ async function run() {
     }
     core.info(`Outputting JSON to file: ${JSON.stringify(toWrite)}`)
     await commitLabels(toWrite, dataDir, lfilename)
+    console.log(JSON.stringify(Object.values(rmap)))
     for await (const { labels, owner, repo } of Object.values(rmap)) {
+      
       const missing = unique.filter((ulabel) => {
-        return !labels.find((label) => label === ulabel.name)
+        return !labels.find((label) => {
+          console.log(label)
+          return label.name === ulabel.name
+        })
       })
+      console.log(JSON.stringify(missing))
       const updates = missing.map((mlabel) => {
-        const ulabel = unique.find((label) => label.name === mlabel)
-        createRepoLabel(owner, repo, ulabel)
+        const ulabel = unique.find((ulabel) => mlabel.name === ulabel.name)
+        console.log(ulabel)
+        return createRepoLabel(owner, repo, ulabel)
       })
       await Promise.all(updates)
       sleep(300)

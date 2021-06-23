@@ -46,11 +46,14 @@ async function run() {
     await commitLabels(toWrite, dataDir, lfilename)
     for await (const { labels, owner, repo } of Object.values(rmap)) {
       const missing = unique.filter((ulabel) => {
-        return !labels.find((label) => label === ulabel.name)
+        return !labels.find((label) => {
+          console.log(label)
+          return label.name === ulabel.name
+        })
       })
       const updates = missing.map((mlabel) => {
-        const ulabel = unique.find((label) => label.name === mlabel)
-        createRepoLabel(owner, repo, ulabel)
+        const ulabel = unique.find((ulabel) => mlabel.name === ulabel.name)
+        return createRepoLabel(owner, repo, ulabel)
       })
       await Promise.all(updates)
       sleep(300)
