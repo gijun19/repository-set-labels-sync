@@ -149,6 +149,7 @@ async function commitLabels(data) {
     await octokit.rest.repos.createOrUpdateFileContents({
       owner: repo.owner,
       repo: repo.repo,
+      branch: github.context.ref,
       path: `${dataDir}${filename}`,
       message: "chore: update labels JSON",
       content: encoded,
