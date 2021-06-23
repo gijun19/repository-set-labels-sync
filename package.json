@@ -1,7 +1,7 @@
 {
-  "name": "javascript-action",
+  "name": "@gimli01/repository-set-labels-sync",
   "version": "1.0.0",
-  "description": "JavaScript Action Template",
+  "description": "An action to sync labels across a set of repositories.",
   "main": "dist/index.js",
   "scripts": {
     "lint": "eslint . --fix",
@@ -18,7 +18,10 @@
     "Actions",
     "JavaScript"
   ],
-  "author": "",
+  "author": {
+    "name": "Daniel Park",
+    "email": "gimli01@github.com"
+  },
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/actions/javascript-action/issues"
