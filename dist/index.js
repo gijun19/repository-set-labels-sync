@@ -6,7 +6,6 @@ require('./sourcemap-register.js');module.exports =
 /***/ ((__unused_webpack_module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const core = __nccwpck_require__(2186)
-const { write } = __nccwpck_require__(4024)
 const path = __nccwpck_require__(5622)
 const { getRepoLabels, commitLabels, createRepoLabel } = __nccwpck_require__(8947)
 const { sleep } = __nccwpck_require__(9328)
@@ -51,19 +50,19 @@ async function run() {
       created_at,
     }
     core.info(`Outputting JSON to file: ${JSON.stringify(toWrite)}`)
-    await commitLabels(toWrite)
-    // for await (const { labels, owner, repo } of Object.values(rmap)) {
-    //   const missing = unique.filter((ulabel) => {
-    //     return !labels.find((label) => label === ulabel.name)
-    //   })
-    //   const updates = missing.map((mlabel) => {
-    //     const ulabel = unique.find((label) => label.name === mlabel)
-    //     createRepoLabel(owner, repo, ulabel)
-    //   })
-    //   await Promise.all(updates)
-    //   sleep(300)
-    // }
-    // core.info(`Successully synced labels for repositories.`)
+    await commitLabels(toWrite, dataDir, lfilename)
+    for await (const { labels, owner, repo } of Object.values(rmap)) {
+      const missing = unique.filter((ulabel) => {
+        return !labels.find((label) => label === ulabel.name)
+      })
+      const updates = missing.map((mlabel) => {
+        const ulabel = unique.find((label) => label.name === mlabel)
+        createRepoLabel(owner, repo, ulabel)
+      })
+      await Promise.all(updates)
+      sleep(300)
+    }
+    core.info(`Successully synced labels for repositories.`)
   } catch (error) {
     core.error(error)
     core.setFailed(error.message)
@@ -137,10 +136,8 @@ async function createRepoLabel(owner, repo, label) {
   })
 }
 
-async function commitLabels(data) {
+async function commitLabels(data, baseDir, filename) {
   core.info("Commiting labels JSON.")
-  const dataDir = core.getInput("data-directory")
-  const filename = core.getInput("labels-filename")
   const content = JSON.stringify(data)
   const encoded = Base64.encode(content)
   const {
@@ -154,7 +151,7 @@ async function commitLabels(data) {
       owner,
       repo,
       ref,
-      path: `${dataDir}${filename}`,
+      path: `${baseDir}${filename}`,
     })
     sha = response.data.sha
   } catch (error) {
@@ -165,7 +162,7 @@ async function commitLabels(data) {
       owner,
       repo,
       branch: ref,
-      path: `${dataDir}${filename}`,
+      path: `${baseDir}${filename}`,
       message: "chore: update labels JSON",
       content: encoded,
       commiter: {
@@ -192,42 +189,6 @@ module.exports = {
   commitLabels,
 }
 
-
-/***/ }),
-
-/***/ 4024:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const fs = __nccwpck_require__(5747)
-const mkdirp = __nccwpck_require__(6186)
-const path = __nccwpck_require__(5622)
-
-const write = async (data, dir, filename, logFn) => {
-  await mkdirp(path.resolve(dir))
-  return fs.writeFile(
-    path.join(dir,filename),
-    JSON.stringify(data),
-    (error) => {
-      if (error) throw error
-      return logFn(`File saved at ${dir}${filename}`)
-    }
-  )
-}
-
-async function readFile(baseDir, file) {
-  const pathToFile = path.join(baseDir, file)
-
-  if (!fs.existsSync(pathToFile)) {
-    throw new Error(`${file} does not exist.`)
-  }
-
-  return fs.promises.readFile(pathToFile, 'utf8')
-}
-
-module.exports = {
-  write,
-  readFile
-}
 
 /***/ }),
 
@@ -6292,280 +6253,6 @@ const gBase64 = {
 }));
 
 
-
-
-/***/ }),
-
-/***/ 6186:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const optsArg = __nccwpck_require__(2853)
-const pathArg = __nccwpck_require__(2930)
-
-const {mkdirpNative, mkdirpNativeSync} = __nccwpck_require__(4983)
-const {mkdirpManual, mkdirpManualSync} = __nccwpck_require__(356)
-const {useNative, useNativeSync} = __nccwpck_require__(4518)
-
-
-const mkdirp = (path, opts) => {
-  path = pathArg(path)
-  opts = optsArg(opts)
-  return useNative(opts)
-    ? mkdirpNative(path, opts)
-    : mkdirpManual(path, opts)
-}
-
-const mkdirpSync = (path, opts) => {
-  path = pathArg(path)
-  opts = optsArg(opts)
-  return useNativeSync(opts)
-    ? mkdirpNativeSync(path, opts)
-    : mkdirpManualSync(path, opts)
-}
-
-mkdirp.sync = mkdirpSync
-mkdirp.native = (path, opts) => mkdirpNative(pathArg(path), optsArg(opts))
-mkdirp.manual = (path, opts) => mkdirpManual(pathArg(path), optsArg(opts))
-mkdirp.nativeSync = (path, opts) => mkdirpNativeSync(pathArg(path), optsArg(opts))
-mkdirp.manualSync = (path, opts) => mkdirpManualSync(pathArg(path), optsArg(opts))
-
-module.exports = mkdirp
-
-
-/***/ }),
-
-/***/ 4992:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const {dirname} = __nccwpck_require__(5622)
-
-const findMade = (opts, parent, path = undefined) => {
-  // we never want the 'made' return value to be a root directory
-  if (path === parent)
-    return Promise.resolve()
-
-  return opts.statAsync(parent).then(
-    st => st.isDirectory() ? path : undefined, // will fail later
-    er => er.code === 'ENOENT'
-      ? findMade(opts, dirname(parent), parent)
-      : undefined
-  )
-}
-
-const findMadeSync = (opts, parent, path = undefined) => {
-  if (path === parent)
-    return undefined
-
-  try {
-    return opts.statSync(parent).isDirectory() ? path : undefined
-  } catch (er) {
-    return er.code === 'ENOENT'
-      ? findMadeSync(opts, dirname(parent), parent)
-      : undefined
-  }
-}
-
-module.exports = {findMade, findMadeSync}
-
-
-/***/ }),
-
-/***/ 356:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const {dirname} = __nccwpck_require__(5622)
-
-const mkdirpManual = (path, opts, made) => {
-  opts.recursive = false
-  const parent = dirname(path)
-  if (parent === path) {
-    return opts.mkdirAsync(path, opts).catch(er => {
-      // swallowed by recursive implementation on posix systems
-      // any other error is a failure
-      if (er.code !== 'EISDIR')
-        throw er
-    })
-  }
-
-  return opts.mkdirAsync(path, opts).then(() => made || path, er => {
-    if (er.code === 'ENOENT')
-      return mkdirpManual(parent, opts)
-        .then(made => mkdirpManual(path, opts, made))
-    if (er.code !== 'EEXIST' && er.code !== 'EROFS')
-      throw er
-    return opts.statAsync(path).then(st => {
-      if (st.isDirectory())
-        return made
-      else
-        throw er
-    }, () => { throw er })
-  })
-}
-
-const mkdirpManualSync = (path, opts, made) => {
-  const parent = dirname(path)
-  opts.recursive = false
-
-  if (parent === path) {
-    try {
-      return opts.mkdirSync(path, opts)
-    } catch (er) {
-      // swallowed by recursive implementation on posix systems
-      // any other error is a failure
-      if (er.code !== 'EISDIR')
-        throw er
-      else
-        return
-    }
-  }
-
-  try {
-    opts.mkdirSync(path, opts)
-    return made || path
-  } catch (er) {
-    if (er.code === 'ENOENT')
-      return mkdirpManualSync(path, opts, mkdirpManualSync(parent, opts, made))
-    if (er.code !== 'EEXIST' && er.code !== 'EROFS')
-      throw er
-    try {
-      if (!opts.statSync(path).isDirectory())
-        throw er
-    } catch (_) {
-      throw er
-    }
-  }
-}
-
-module.exports = {mkdirpManual, mkdirpManualSync}
-
-
-/***/ }),
-
-/***/ 4983:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const {dirname} = __nccwpck_require__(5622)
-const {findMade, findMadeSync} = __nccwpck_require__(4992)
-const {mkdirpManual, mkdirpManualSync} = __nccwpck_require__(356)
-
-const mkdirpNative = (path, opts) => {
-  opts.recursive = true
-  const parent = dirname(path)
-  if (parent === path)
-    return opts.mkdirAsync(path, opts)
-
-  return findMade(opts, path).then(made =>
-    opts.mkdirAsync(path, opts).then(() => made)
-    .catch(er => {
-      if (er.code === 'ENOENT')
-        return mkdirpManual(path, opts)
-      else
-        throw er
-    }))
-}
-
-const mkdirpNativeSync = (path, opts) => {
-  opts.recursive = true
-  const parent = dirname(path)
-  if (parent === path)
-    return opts.mkdirSync(path, opts)
-
-  const made = findMadeSync(opts, path)
-  try {
-    opts.mkdirSync(path, opts)
-    return made
-  } catch (er) {
-    if (er.code === 'ENOENT')
-      return mkdirpManualSync(path, opts)
-    else
-      throw er
-  }
-}
-
-module.exports = {mkdirpNative, mkdirpNativeSync}
-
-
-/***/ }),
-
-/***/ 2853:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { promisify } = __nccwpck_require__(1669)
-const fs = __nccwpck_require__(5747)
-const optsArg = opts => {
-  if (!opts)
-    opts = { mode: 0o777, fs }
-  else if (typeof opts === 'object')
-    opts = { mode: 0o777, fs, ...opts }
-  else if (typeof opts === 'number')
-    opts = { mode: opts, fs }
-  else if (typeof opts === 'string')
-    opts = { mode: parseInt(opts, 8), fs }
-  else
-    throw new TypeError('invalid options argument')
-
-  opts.mkdir = opts.mkdir || opts.fs.mkdir || fs.mkdir
-  opts.mkdirAsync = promisify(opts.mkdir)
-  opts.stat = opts.stat || opts.fs.stat || fs.stat
-  opts.statAsync = promisify(opts.stat)
-  opts.statSync = opts.statSync || opts.fs.statSync || fs.statSync
-  opts.mkdirSync = opts.mkdirSync || opts.fs.mkdirSync || fs.mkdirSync
-  return opts
-}
-module.exports = optsArg
-
-
-/***/ }),
-
-/***/ 2930:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const platform = process.env.__TESTING_MKDIRP_PLATFORM__ || process.platform
-const { resolve, parse } = __nccwpck_require__(5622)
-const pathArg = path => {
-  if (/\0/.test(path)) {
-    // simulate same failure that node raises
-    throw Object.assign(
-      new TypeError('path must be a string without null bytes'),
-      {
-        path,
-        code: 'ERR_INVALID_ARG_VALUE',
-      }
-    )
-  }
-
-  path = resolve(path)
-  if (platform === 'win32') {
-    const badWinChars = /[*|"<>?:]/
-    const {root} = parse(path)
-    if (badWinChars.test(path.substr(root.length))) {
-      throw Object.assign(new Error('Illegal characters in path.'), {
-        path,
-        code: 'EINVAL',
-      })
-    }
-  }
-
-  return path
-}
-module.exports = pathArg
-
-
-/***/ }),
-
-/***/ 4518:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const fs = __nccwpck_require__(5747)
-
-const version = process.env.__TESTING_MKDIRP_NODE_VERSION__ || process.version
-const versArr = version.replace(/^v/, '').split('.')
-const hasNative = +versArr[0] > 10 || +versArr[0] === 10 && +versArr[1] >= 12
-
-const useNative = !hasNative ? () => false : opts => opts.mkdir === fs.mkdir
-const useNativeSync = !hasNative ? () => false : opts => opts.mkdirSync === fs.mkdirSync
-
-module.exports = {useNative, useNativeSync}
 
 
 /***/ }),
