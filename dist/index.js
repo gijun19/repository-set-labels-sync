@@ -51,7 +51,6 @@ async function run() {
       created_at,
     }
     core.info(`Outputting JSON to file: ${JSON.stringify(toWrite)}`)
-    // await write(toWrite, dataDir, lfilename, core.info)
     await commitLabels(toWrite)
     // for await (const { labels, owner, repo } of Object.values(rmap)) {
     //   const missing = unique.filter((ulabel) => {
