@@ -143,12 +143,28 @@ async function commitLabels(data) {
   const filename = core.getInput("labels-filename")
   const content = JSON.stringify(data)
   const encoded = Base64.encode(content)
-  const { repo, actor } = github.context
+  const {
+    repo: { owner, repo },
+    actor,
+    ref,
+  } = github.context
+  let sha
+  try {
+    const response = await octokit.rest.repos.getContent({
+      owner,
+      repo,
+      ref,
+      path: `${dataDir}${filename}`,
+    })
+    sha = response.data.sha
+  } catch (error) {
+    sha = null
+  }
   try {
     await octokit.rest.repos.createOrUpdateFileContents({
-      owner: repo.owner,
-      repo: repo.repo,
-      branch: github.context.ref,
+      owner,
+      repo,
+      branch: ref,
       path: `${dataDir}${filename}`,
       message: "chore: update labels JSON",
       content: encoded,
@@ -160,7 +176,7 @@ async function commitLabels(data) {
         name: actor,
         email: `${actor}@users.noreply.github.com`,
       },
-      sha: github.context.sha
+      ...(sha ? { sha } : {}),
     })
   } catch (error) {
     core.error("Error updating labels JSON.")
