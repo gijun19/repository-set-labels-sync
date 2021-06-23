@@ -53,19 +53,20 @@ async function run() {
     core.info(`Outputting JSON to file: ${JSON.stringify(toWrite)}`)
     await write(toWrite, dataDir, lfilename, core.info)
     await commitLabels()
-    for await (const { labels, owner, repo } of Object.values(rmap)) {
-      const missing = unique.filter((ulabel) => {
-        return !labels.find((label) => label === ulabel.name)
-      })
-      const updates = missing.map((mlabel) => {
-        const ulabel = unique.find((label) => label.name === mlabel)
-        createRepoLabel(owner, repo, ulabel)
-      })
-      await Promise.all(updates)
-      sleep(300)
-    }
-    core.info(`Successully synced labels for repositories.`)
+    // for await (const { labels, owner, repo } of Object.values(rmap)) {
+    //   const missing = unique.filter((ulabel) => {
+    //     return !labels.find((label) => label === ulabel.name)
+    //   })
+    //   const updates = missing.map((mlabel) => {
+    //     const ulabel = unique.find((label) => label.name === mlabel)
+    //     createRepoLabel(owner, repo, ulabel)
+    //   })
+    //   await Promise.all(updates)
+    //   sleep(300)
+    // }
+    // core.info(`Successully synced labels for repositories.`)
   } catch (error) {
+    core.error(error)
     core.setFailed(error.message)
   }
 }
@@ -140,27 +141,29 @@ async function createRepoLabel(owner, repo, label) {
 }
 
 async function commitLabels() {
-  const dataDir = core.getInput('data-directory')
-  const filename = core.getInput('labels-filename')
-  const filepath = path.resolve(dataDir, filename)
-  const content = fs.readFileSync(filepath, "utf-8")
+  core.info("Commiting labels JSON.")
+  const dataDir = core.getInput("data-directory")
+  const filename = core.getInput("labels-filename")
+  core.debug(dataDir, filename)
+  const content = fs.readFileSync(path.resolve(dataDir, filename), "utf-8")
+  console.log(content)
   const encoded = Base64.encode(content)
   const { actor } = github.context
 
   await octokit.rest.repos.createOrUpdateFileContents({
     owner: github.context.actor,
     repo: github.context.repo,
-    path: filepath,
+    path: `${dataDir}/${filename}`,
     message: "chore: update labels JSON",
     content: encoded,
     commiter: {
       name: actor,
-      email: `${actor}@users.noreply.github.com`
+      email: `${actor}@users.noreply.github.com`,
     },
     author: {
       name: actor,
-      email: `${actor}@users.noreply.github.com`
-    }
+      email: `${actor}@users.noreply.github.com`,
+    },
   })
 
   core.info(`Successfully committed labels JSON.`)
@@ -169,7 +172,7 @@ async function commitLabels() {
 module.exports = {
   getRepoLabels,
   createRepoLabel,
-  commitLabels
+  commitLabels,
 }
 
 
