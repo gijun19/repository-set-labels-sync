@@ -1,7 +1,8 @@
 const core = require("@actions/core")
-const { write } = require('./lib/util')
+const { write } = require("./lib/util")
 const path = require("path")
-const { getRepoLabels } = require("./lib/api")
+const { getRepoLabels, commitLabels, createRepoLabel } = require("./lib/api")
+const { sleep } = require("sleepover")
 
 async function run() {
   try {
@@ -36,14 +37,27 @@ async function run() {
         core.error(error)
       }
     }
-    const data = Object.values(lmap)
+    const unique = Object.values(lmap)
     const created_at = new Date().toISOString()
     const toWrite = {
-      unique: data,
-      created_at
+      unique,
+      created_at,
     }
     core.info(`Outputting JSON to file: ${JSON.stringify(toWrite)}`)
     await write(toWrite, dataDir, lfilename, core.info)
+    await commitLabels()
+    for await (const { labels, owner, repo } of Object.values(rmap)) {
+      const missing = unique.filter((ulabel) => {
+        return !labels.find((label) => label === ulabel.name)
+      })
+      const updates = missing.map((mlabel) => {
+        const ulabel = unique.find((label) => label.name === mlabel)
+        createRepoLabel(owner, repo, ulabel)
+      })
+      await Promise.all(updates)
+      sleep(300)
+    }
+    core.info(`Successully synced labels for repositories.`)
   } catch (error) {
     core.setFailed(error.message)
   }
