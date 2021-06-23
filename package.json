@@ -37,6 +37,7 @@
     "actions-toolkit": "^6.0.1",
     "date-fns": "^2.22.1",
     "dotenv": "^10.0.0",
+    "js-base64": "^3.6.1",
     "mkdirp": "^1.0.4",
     "sleepover": "^1.1.4"
   },
