@@ -142,8 +142,8 @@ async function createRepoLabel(owner, repo, label) {
 async function commitLabels() {
   const dataDir = core.getInput('data-directory')
   const filename = core.getInput('labels-filename')
-  const filepath = path.join(dataDir, filename)
-  const content = fs.readFileSync(filename, "utf-8")
+  const filepath = path.resolve(dataDir, filename)
+  const content = fs.readFileSync(filepath, "utf-8")
   const encoded = Base64.encode(content)
   const { actor } = github.context
 
@@ -185,11 +185,11 @@ const path = __nccwpck_require__(5622)
 const write = async (data, dir, filename, logFn) => {
   await mkdirp(path.resolve(dir))
   return fs.writeFile(
-    path.resolve(dir, filename),
+    path.join(dir,filename),
     JSON.stringify(data),
     (error) => {
       if (error) throw error
-      return logFn(`File saved at ${dir}/${filename}`)
+      return logFn(`File saved at ${dir}${filename}`)
     }
   )
 }
