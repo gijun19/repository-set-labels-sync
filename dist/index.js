@@ -51,8 +51,8 @@ async function run() {
       created_at,
     }
     core.info(`Outputting JSON to file: ${JSON.stringify(toWrite)}`)
-    await write(toWrite, dataDir, lfilename, core.info)
-    await commitLabels()
+    // await write(toWrite, dataDir, lfilename, core.info)
+    await commitLabels(toWrite)
     // for await (const { labels, owner, repo } of Object.values(rmap)) {
     //   const missing = unique.filter((ulabel) => {
     //     return !labels.find((label) => label === ulabel.name)
@@ -84,8 +84,6 @@ const core = __nccwpck_require__(2186)
 const { GitHub, getOctokitOptions } = __nccwpck_require__(3030)
 const github = __nccwpck_require__(5438)
 const Octokit = GitHub.plugin(throttling)
-const fs = __nccwpck_require__(5747)
-const path = __nccwpck_require__(5622)
 const Base64 = __nccwpck_require__(4139)
 
 const token = core.getInput("token")
@@ -140,31 +138,33 @@ async function createRepoLabel(owner, repo, label) {
   })
 }
 
-async function commitLabels() {
+async function commitLabels(data) {
   core.info("Commiting labels JSON.")
   const dataDir = core.getInput("data-directory")
   const filename = core.getInput("labels-filename")
-  core.debug(dataDir, filename)
-  const content = fs.readFileSync(path.resolve(dataDir, filename), "utf-8")
-  console.log(content)
+  const content = JSON.stringify(data)
   const encoded = Base64.encode(content)
-  const { actor } = github.context
-
-  await octokit.rest.repos.createOrUpdateFileContents({
-    owner: github.context.actor,
-    repo: github.context.repo,
-    path: `${dataDir}/${filename}`,
-    message: "chore: update labels JSON",
-    content: encoded,
-    commiter: {
-      name: actor,
-      email: `${actor}@users.noreply.github.com`,
-    },
-    author: {
-      name: actor,
-      email: `${actor}@users.noreply.github.com`,
-    },
-  })
+  const { repo, actor } = github.context
+  try {
+    await octokit.rest.repos.createOrUpdateFileContents({
+      owner: repo.owner,
+      repo: repo.repo,
+      path: `${dataDir}${filename}`,
+      message: "chore: update labels JSON",
+      content: encoded,
+      commiter: {
+        name: actor,
+        email: `${actor}@users.noreply.github.com`,
+      },
+      author: {
+        name: actor,
+        email: `${actor}@users.noreply.github.com`,
+      },
+    })
+  } catch (error) {
+    core.error("Error updating labels JSON.")
+    throw error
+  }
 
   core.info(`Successfully committed labels JSON.`)
 }
@@ -197,8 +197,19 @@ const write = async (data, dir, filename, logFn) => {
   )
 }
 
+async function readFile(baseDir, file) {
+  const pathToFile = path.join(baseDir, file)
+
+  if (!fs.existsSync(pathToFile)) {
+    throw new Error(`${file} does not exist.`)
+  }
+
+  return fs.promises.readFile(pathToFile, 'utf8')
+}
+
 module.exports = {
-  write
+  write,
+  readFile
 }
 
 /***/ }),
